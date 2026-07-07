@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# ---------- 2. 验证安装 ----------
-RUN stockfish --version
+# Debian 的 stockfish 安装在 /usr/games/stockfish
+RUN ln -s /usr/games/stockfish /usr/local/bin/stockfish && \
+    stockfish --version
+
 
 # ---------- 3. 安装 Python 依赖 ----------
 WORKDIR /app
