@@ -5,25 +5,14 @@
 
 FROM python:3.11-slim
 
-# ---------- 1. 安装系统依赖 ----------
+# ---------- 1. 安装系统依赖和 Stockfish ----------
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    ca-certificates \
+    stockfish \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# ---------- 2. 安装 Stockfish 18 ----------
-RUN wget -q https://github.com/official-stockfish/Stockfish/releases/download/sf18/stockfish-ubuntu-x86-64-avx2.tar \
-    -O /tmp/sf.tar && \
-    mkdir -p /tmp/sf && tar -xf /tmp/sf.tar -C /tmp/sf && \
-    mv /tmp/sf/stockfish/stockfish-ubuntu-x86-64-avx2 /usr/local/bin/stockfish && \
-    chmod +x /usr/local/bin/stockfish && \
-    rm -rf /tmp/sf.tar /tmp/sf
-
-# 验证安装 (失败则降级到 apt 仓库版本)
-RUN stockfish --version || \
-    (echo "Stockfish 18 download failed, falling back to apt..." && \
-     apt-get update && apt-get install -y stockfish && rm -rf /var/lib/apt/lists/*)
+# ---------- 2. 验证安装 ----------
+RUN stockfish --version
 
 # ---------- 3. 安装 Python 依赖 ----------
 WORKDIR /app
@@ -67,3 +56,4 @@ EXPOSE 8000
 
 # 启动 supervisord
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
