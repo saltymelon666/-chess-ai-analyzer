@@ -1,6 +1,3 @@
-# Railway 部署配置
-# 文档: https://docs.railway.app/reference/deploy-config
-
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
@@ -14,3 +11,4 @@
     "restartPolicyMaxRetries": 3
   }
 }
+
