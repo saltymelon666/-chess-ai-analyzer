@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安装依赖 (不含 Streamlit)
+COPY requirements.frontend.txt .
+RUN pip install --no-cache-dir -r requirements.frontend.txt
+
+# 复制应用代码 (仅前端服务需要的)
+COPY app/__init__.py app/
+COPY app/config.py app/
+COPY app/models.py app/
+COPY app/ai_explainer.py app/
+COPY app/api.py app/
+COPY app/static/ app/static/
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,69 @@
+# ============================================================
+# Railway 部署 — 整合 Stockfish 微服务 + 前端服务
+# 使用 supervisord 在一个容器内运行两个进程
+# ============================================================
+
+FROM python:3.11-slim
+
+# ---------- 1. 安装系统依赖 ----------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    ca-certificates \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------- 2. 安装 Stockfish 18 ----------
+RUN wget -q https://github.com/official-stockfish/Stockfish/releases/download/sf18/stockfish-ubuntu-x86-64-avx2.tar \
+    -O /tmp/sf.tar && \
+    mkdir -p /tmp/sf && tar -xf /tmp/sf.tar -C /tmp/sf && \
+    mv /tmp/sf/stockfish/stockfish-ubuntu-x86-64-avx2 /usr/local/bin/stockfish && \
+    chmod +x /usr/local/bin/stockfish && \
+    rm -rf /tmp/sf.tar /tmp/sf
+
+# 验证安装 (失败则降级到 apt 仓库版本)
+RUN stockfish --version || \
+    (echo "Stockfish 18 download failed, falling back to apt..." && \
+     apt-get update && apt-get install -y stockfish && rm -rf /var/lib/apt/lists/*)
+
+# ---------- 3. 安装 Python 依赖 ----------
+WORKDIR /app
+
+# 安装合并依赖 (排除 streamlit，不需要)
+COPY requirements.txt /app/requirements.txt
+COPY requirements.frontend.txt /app/requirements-frontend.txt
+RUN grep -v "^streamlit" requirements.txt > /app/requirements-merged.txt && \
+    cat requirements-frontend.txt >> /app/requirements-merged.txt && \
+    pip install --no-cache-dir -r requirements-merged.txt
+
+# ---------- 4. 复制代码 ----------
+# Stockfish 微服务
+COPY stockfish-service/config.py /app/stockfish-service/
+COPY stockfish-service/engine.py /app/stockfish-service/
+COPY stockfish-service/api.py /app/stockfish-service/
+
+# 前端服务
+COPY app/__init__.py /app/app/
+COPY app/config.py /app/app/
+COPY app/models.py /app/app/
+COPY app/ai_explainer.py /app/app/
+COPY app/api.py /app/app/
+COPY app/static/ /app/app/static/
+
+# ---------- 5. 配置 supervisord ----------
+RUN mkdir -p /var/log/supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# ---------- 6. 环境变量默认值 ----------
+ENV STOCKFISH_PATH=stockfish
+ENV STOCKFISH_DEPTH=18
+ENV STOCKFISH_THREADS=2
+ENV STOCKFISH_HASH=64
+ENV BACKEND_PORT=8000
+ENV STOCKFISH_SERVICE_URL=http://127.0.0.1:8080
+ENV PORT=8000
+
+# Railway 健康检查用 8000 端口（前端服务）
+EXPOSE 8000
+
+# 启动 supervisord
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

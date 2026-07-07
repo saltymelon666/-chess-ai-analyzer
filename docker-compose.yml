@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  # ============================================
+  # Stockfish 引擎微服务 (必需)
+  # ============================================
+  stockfish:
+    build: ./stockfish-service
+    container_name: chess-stockfish
+    ports:
+      - "8080:8080"
+    environment:
+      - STOCKFISH_PATH=stockfish
+      - STOCKFISH_DEPTH=18
+      - STOCKFISH_THREADS=2
+      - STOCKFISH_HASH=64
+      - PORT=8080
+    restart: unless-stopped
+
+  # ============================================
+  # 前端 + AI 解释服务 (可选 — AI 需要 DeepSeek Key)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: chess-frontend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - BACKEND_PORT=8000
+      - STOCKFISH_SERVICE_URL=http://stockfish:8080
+    depends_on:
+      - stockfish
+    restart: unless-stopped

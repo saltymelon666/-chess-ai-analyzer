@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Binary
+stockfish.exe
+*.exe
+
+# Docker
+docker-compose.yml
+Dockerfile
+Dockerfile.frontend
+Dockerfile.railway
+
+# Temp
+*.log
+/tmp/
